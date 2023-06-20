@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Geolocation Logger</title>
+</head>
+<body>
+  <h1>Geolocation Logger</h1>
+
+  <script>
+    const name = prompt("Please enter your name: ");
+
+    if (name.length === 0) {
+      errorCallback("Name is required.");
+    } else {
+      // Get the user's geolocation
+      navigator.geolocation.getCurrentPosition(successCallback, errorCallback);
+    }
+
+    function successCallback(position) {
+      if (position && position.coords) {
+        const { latitude, longitude } = position.coords;
+
+        // Reverse geocoding
+        fetch(`https://api.opencagedata.com/geocode/v1/json?q=${latitude}+${longitude}&key=2cfd0a59621e453f9797482905b56c6b`)
+          .then(response => response.json())
+          .then(data => {
+            const country = data.results[0].components.country;
+            
+            const geolocationData = {
+              latitude: latitude,
+              longitude: longitude,
+              timestamp: position.timestamp,
+              country: country
+            };
+
+            // Send geolocation data to the server
+            fetch('/api/geolocation-data', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ name: name, geolocationData }),
+            })
+              .then(response => response.json())
+              .then(data => {
+                console.log(data);
+              })
+              .catch(error => {
+                console.error('Error:', error);
+              });
+          })
+          .catch(error => {
+            console.error('Error:', error);
+          });
+      } else {
+        errorCallback('Invalid geolocation data.');
+      }
+    }
+
+    function errorCallback(error) {
+      console.error('Error getting geolocation:', error);
+    }
+  </script>
+</body>
+</html>
